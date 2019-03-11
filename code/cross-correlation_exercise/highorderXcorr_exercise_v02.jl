@@ -31,7 +31,7 @@ returns the Green’s function solution for two-dimensional space, under the far
 """
 function gf(x::Array{Float64,1},xi::Array{Float64,1},omega::Float64, vel::Float64, rho::Float64, Q::Float64)
     r = norm(x.-xi)
-    g1 = (1/sqrt((8*pi*omega*(1/vel) * r))) * exp(-im * (omega* (1/vel) * r + pi/4)) * exp(-(omega* r)/(2*v*Q)) 
+    g1 = (1/sqrt((8*pi*omega*(1/vel) * r))) * exp(-im * (omega* (1/vel) * r + pi/4)) * exp(-(omega* r)/(2*vel*Q)) 
     return g1
 end
 
@@ -102,6 +102,8 @@ end
 for i = 1:1
     for j = 1:length(omega)-1
         gf1[i, Int((length(omega)-1) + j)] = real(gf1[i, Int(length(omega) - j)]) + im*-imag(gf1[i, Int(length(omega) - j)]);
+        gf2[i, Int((length(omega)-1) + j)] = real(gf2[i, Int(length(omega) - j)]) + im*-imag(gf2[i, Int(length(omega) - j)]);
+        gf3[i, Int((length(omega)-1) + j)] = real(gf3[i, Int(length(omega) - j)]) + im*-imag(gf3[i, Int(length(omega) - j)]);
     end
 end
 
@@ -180,7 +182,7 @@ u1last = ifft(gf1[1,:])
 u2last = ifft(gf2[1,:])
 azimuthlast = 360
 p_all = plot!(azimuthlast.+ signal_magnification.*real.(u1last[1:length(omega)]), t, line=(:red, 1, :solid))
-p_all = plot!(azimuthlast.+ signal_magnification.*real.(u2last[1:length(omega)]), t, line=(:bluek, 1, :solid))
+p_all = plot!(azimuthlast.+ signal_magnification.*real.(u2last[1:length(omega)]), t, line=(:blue, 1, :solid))
 
 
 plot(p_all, layout = (1,1), size = (600, 600), legend=false)
@@ -189,7 +191,47 @@ plot(p_all, layout = (1,1), size = (600, 600), legend=false)
 Exercise 1: First order cross correlation C1:1->2
 """
 
+cc1_12 = zeros(Complex{Float64}, NumofSource, 2*(length(omega)-1))
 
+for i = 1:NumofSource
+    for j = 1:2*(length(omega)-1
+        
+        cc1_12[i,j] = conj(gf1[i,j]) * gf2[i,j]
+
+    end
+end
+
+
+# plot along azimuth
+signal_magnification = 1e6
+maxplotT = 12
+xticks = 0:45:360
+
+p_all = plot(xlabel = "azimuth [deg]", 
+    ylabel = "Time [s]",
+    title = "Displacement at R1",
+    xlim = (-20, 380),
+    ylim = (minimum(t), maxplotT),
+    xticks = xticks
+    )
+
+for i = 1:NumofSource
+    u1test = ifft(gf1[i,:])
+    u2test = ifft(gf2[i,:])
+    azimuth =  rad2deg(theta[i])  
+    p_all = plot!(azimuth.+ signal_magnification.*real.(u1test[1:length(omega)]), t, line=(:red, 1, :solid))
+    p_all = plot!(azimuth.+ signal_magnification.*real.(u2test[1:length(omega)]), t, line=(:blue, 1, :solid))
+end
+
+#plot at 360
+u1last = ifft(gf1[1,:])
+u2last = ifft(gf2[1,:])
+azimuthlast = 360
+p_all = plot!(azimuthlast.+ signal_magnification.*real.(u1last[1:length(omega)]), t, line=(:red, 1, :solid))
+p_all = plot!(azimuthlast.+ signal_magnification.*real.(u2last[1:length(omega)]), t, line=(:blue, 1, :solid))
+
+
+plot(p_all, layout = (1,1), size = (600, 600), legend=false)
 
 
 
@@ -197,9 +239,7 @@ Exercise 1: First order cross correlation C1:1->2
 Exercise 2: Second order cross correlation C2:1->2
 """
 
-
 # Making time series (pseudo inputs)
-
 N = round(Int, T/dt + 1) # number of data point 
 
 t = dt .* collect(0:N-1) # Time [s]
